@@ -1,0 +1,6 @@
+ToDo today:
+	Level Creation
+Tomorrow ToDo list
+	Bluejay tutorial helped
+	Maybe a checkpoint object
+	
