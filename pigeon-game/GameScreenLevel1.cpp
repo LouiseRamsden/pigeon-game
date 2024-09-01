@@ -11,7 +11,8 @@
 #include "commons.h"
 
 
-GameScreenLevel1::GameScreenLevel1(SDL_Renderer* renderer , GameScreenManager* manager) : GameScreen(renderer)
+
+GameScreenLevel1::GameScreenLevel1(SDL_Renderer* renderer , GameScreenManager* manager) : GameScreen(renderer), GameScreenPlayable()
 {
 	m_screenManager = manager;
 	SetUpLevel();
@@ -54,8 +55,6 @@ void GameScreenLevel1::Render()
 	m_gameText[1]->RenderAt("Health " + std::to_string(m_playerCharacter->GetHealth()), 10, 30);
 	m_gameText[1]->SetColor(SDL_Color{ 255,255,255,255 });
 	m_gameText[1]->RenderAt(m_winMessage, 10, 50);
-	
-
 }
 
 void GameScreenLevel1::Update(float deltaTime, SDL_Event e) 
@@ -63,139 +62,13 @@ void GameScreenLevel1::Update(float deltaTime, SDL_Event e)
 	// Update Character + Character area checks
 	m_playerCharacter->Update(deltaTime, e);
 
+	bool collided = false;
+	bool roughCollided = false;
+	bool changingScreens = false;
 
-	//--------------WALL COLLISION CHECKS--------------------
-	bool Collided = false;
-	bool RoughCollided = false;
-	bool ChangingScreens = false;
+	CheckCollisionAndScroll(deltaTime, collided, roughCollided, changingScreens);
 
-	for (int i = 0; i < m_wallObjects.size(); i++)
-	{
-
-		if (Collisions::Instance()->Box(m_playerCharacter->GetCollisionBox(), m_wallObjects[i]->GetCollisionBox()))
-		{
-			Collided = true;
-			RoughCollided = true;
-			RoughCollision();
-		}
-
-	}
-	for (int i = 0; i < m_platformObjects.size(); i++) 
-	{
-		if (Collisions::Instance()->Box(m_playerCharacter->GetCollisionBox(), m_platformObjects[i]->GetCollisionBox()))
-		{
-			Collided = true;
-			SmoothCollision();
-
-		}
-	}
-	for (int i = 0; i < m_hazardObjects.size(); i++) 
-	{
-		if (Collisions::Instance()->Box(m_playerCharacter->GetCollisionBox(), m_hazardObjects[i]->GetCollisionBox())) 
-		{
-			Collided = true;
-			m_playerCharacter->SetHealth(m_playerCharacter->GetHealth() - 25);
-			if (m_playerCharacter->GetHealth() <= 0) 
-			{
-				ChangingScreens = true;
-			}
-			m_playerCharacter->Respawn();
-			for (int i = 0; i < m_platformObjects.size(); i++)
-			{
-				m_platformObjects[i]->SetPosition( m_platformObjects[i]->GetPosition() - m_platformObjects[i]->GetScrollOffset());
-				m_platformObjects[i]->SetScrollOffset(Vector2D(0, 0));
-			}
-			for (int i = 0; i < m_hazardObjects.size(); i++)
-			{
-				m_hazardObjects[i]->SetPosition(m_hazardObjects[i]->GetPosition() - m_hazardObjects[i]->GetScrollOffset());
-				m_hazardObjects[i]->SetScrollOffset(Vector2D(0, 0));
-			}
-			for (int i = 0; i < m_wallObjects.size(); i++) 
-			{
-				m_wallObjects[i]->SetPosition(m_wallObjects[i]->GetPosition() - m_wallObjects[i]->GetScrollOffset());
-				m_wallObjects[i]->SetScrollOffset(Vector2D(0, 0));
-			}
-			for (int i = 0; i < m_collectibleObjects.size(); i++)
-			{
-				m_collectibleObjects[i]->SetPosition(m_collectibleObjects[i]->GetPosition() - m_collectibleObjects[i]->GetScrollOffset());
-				m_collectibleObjects[i]->SetScrollOffset(Vector2D(0, 0));
-			}
-
-		}
-	}
-	for (int i = 0; i < m_collectibleObjects.size(); i++) 
-	{
-		if (Collisions::Instance()->Box(m_playerCharacter->GetCollisionBox(), m_collectibleObjects[i]->GetCollisionBox())) 
-		{
-			m_collectibleObjects.erase(m_collectibleObjects.begin() + i);
-			m_collectibleCount++;
-		}
-	}
-	if (Collisions::Instance()->Box(m_playerCharacter->GetCollisionBox(), Rect2D(0, SCREEN_HEIGHT, SCREEN_WIDTH + 100, 1)))
-	{
-		Collided = true;
-
-
-		SmoothCollision();
-	}
-	
-	if (Collided == false) 
-	{
-		m_playerCharacter->SetCollidingWithFloor(false);
-	}
-	m_playerCharacter->SetLastPosition(m_playerCharacter->GetPosition());
-	
-	//-------------END WALL COLLISION CHECKS------------------
-
-	//--------------LEVEL SCROLLING CHECKS-----------------
-	if(RoughCollided == false)
-	{
-		if (m_playerCharacter->GetPosition().x > SCREEN_WIDTH - CHARACTER_SIZE - CHARACTER_SCREEN_OFFSET)
-		{
-			m_playerCharacter->SetPosition({ (float)(SCREEN_WIDTH - CHARACTER_SIZE) - CHARACTER_SCREEN_OFFSET, m_playerCharacter->GetPosition().y });
-			for (int i = 0; i < m_wallObjects.size(); i++)
-			{
-				m_wallObjects[i]->Scroll(LEFT, MOVEMENT_SPEED, deltaTime);
-
-			}
-			for (int i = 0; i < m_platformObjects.size(); i++)
-			{
-				m_platformObjects[i]->Scroll(LEFT, MOVEMENT_SPEED, deltaTime);
-			}
-			for (int i = 0; i < m_hazardObjects.size(); i++)
-			{
-				m_hazardObjects[i]->Scroll(LEFT, MOVEMENT_SPEED, deltaTime);
-			}
-			for (int i = 0; i < m_collectibleObjects.size(); i++) 
-			{
-				m_collectibleObjects[i]->Scroll(LEFT, MOVEMENT_SPEED, deltaTime);
-			}
-			BackgroundScroll(LEFT, MOVEMENT_SPEED, deltaTime);
-		}
-		if (m_playerCharacter->GetPosition().x < CHARACTER_SCREEN_OFFSET)
-		{
-			m_playerCharacter->SetPosition({ 0.0f + CHARACTER_SCREEN_OFFSET, m_playerCharacter->GetPosition().y });
-			for (int i = 0; i < m_wallObjects.size(); i++)
-			{
-				m_wallObjects[i]->Scroll(RIGHT, MOVEMENT_SPEED, deltaTime);
-			}
-			for (int i = 0; i < m_platformObjects.size(); i++)
-			{
-				m_platformObjects[i]->Scroll(RIGHT, MOVEMENT_SPEED, deltaTime);
-			}
-			for (int i = 0; i < m_hazardObjects.size(); i++)
-			{
-				m_hazardObjects[i]->Scroll(RIGHT, MOVEMENT_SPEED, deltaTime);
-			}
-			for (int i = 0; i < m_collectibleObjects.size(); i++)
-			{
-				m_collectibleObjects[i]->Scroll(RIGHT, MOVEMENT_SPEED, deltaTime);
-			}
-			BackgroundScroll(RIGHT, MOVEMENT_SPEED, deltaTime);
-		}
-		//--------------END SCROLLING CHECKS--------------------
-	}
-	if (ChangingScreens == true) 
+	if (changingScreens == true) 
 	{
 		m_screenManager->ChangeScreen(SCREEN_TITLE);
 	}
@@ -218,6 +91,7 @@ bool GameScreenLevel1::SetUpLevel()
 
 	//Create Character
 	m_playerCharacter = new Character(m_renderer, "images/Player.png", Vector2D(40, 40));
+	m_characterReference = m_playerCharacter;
 
 
 	//Level Data - Walls (RoughCollision)
@@ -278,27 +152,3 @@ bool GameScreenLevel1::SetUpLevel()
 	return true;
 }
 
-void GameScreenLevel1::RoughCollision() 
-{
-	
-	m_playerCharacter->ResetJumps();
-	m_playerCharacter->SetPosition(m_playerCharacter->GetLastPosition());
-}
-void GameScreenLevel1::SmoothCollision()  
-{
-	m_playerCharacter->ResetJumps();
-	m_playerCharacter->SetCollidingWithFloor(true);
-}
-
-void GameScreenLevel1::BackgroundScroll(DIRECTION direction, float movementSpeed, float deltaTime) 
-{
-	switch (direction)
-	{
-	case LEFT:
-		m_backGroundAbsolutePosition -= deltaTime * movementSpeed;
-		break;
-	case RIGHT:
-		m_backGroundAbsolutePosition += deltaTime * movementSpeed;
-		break;
-	}
-}

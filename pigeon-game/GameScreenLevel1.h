@@ -4,18 +4,12 @@
 
 #include <vector>
 
-#include "GameScreen.h"
-#include "commons.h"
-#include "Character.h"
-#include "LevelObject.h"
-#include "Collisions.h"
-#include "GameText.h"
-#include "GameScreenManager.h"
+#include "GameScreenPlayable.h"
 
 class Texture2D;
 class Character;
 
-class GameScreenLevel1 : GameScreen
+class GameScreenLevel1 : GameScreen, protected GameScreenPlayable
 {
 public:
 	GameScreenLevel1(SDL_Renderer* renderer, GameScreenManager* manager);
@@ -23,7 +17,7 @@ public:
 
 	void Render() override;
 	void Update(float deltaTime, SDL_Event e) override;
-	void BackgroundScroll(DIRECTION direction, float movementSpeed, float deltaTime);
+	
 
 private:
 	std::vector<GameText*> m_gameText;
@@ -32,23 +26,7 @@ private:
 	Character* m_playerCharacter = nullptr;
 	GameScreenManager* m_screenManager = nullptr;
 
-	std::vector<LevelObject*> m_wallObjects;
-	std::vector<LevelObject*> m_platformObjects;
-	std::vector<LevelObject*> m_hazardObjects;
-	std::vector<LevelObject*> m_collectibleObjects;
-
-	int m_collectibleCount;
-
-	float m_backGroundAbsolutePosition;
-
 	bool SetUpLevel();
-
-	void SmoothCollision();
-
-	void RoughCollision();
-
-	std::string m_winMessage;
-
 };
 
 #endif
